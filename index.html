@@ -1979,6 +1979,11 @@
   body.vcc-workspace #panel-vcc .vcc-mode[aria-pressed="false"] span{background:#dfe7f2;}
   body.vcc-workspace #panel-vcc .vcc-mode-help{margin:0 0 11px;color:#536681;font:400 13px/1.45 var(--sans);}
   body.vcc-workspace #panel-vcc .vcc-remark-filter .vfl span{margin-left:4px;font-family:var(--mono);}
+  body.vcc-workspace #panel-vcc #vccRemarkGroup{
+    min-width:215px;flex:1;border:1px solid var(--line);border-radius:999px;background:#fff;color:var(--navy);
+    padding:7px 30px 7px 11px;font:650 14px var(--sans);cursor:pointer;
+  }
+  body.vcc-workspace #panel-vcc #vccRemarkGroup:focus-visible{outline:2px solid var(--navy);outline-offset:2px;}
   body.vcc-workspace #panel-vcc .vcc-grouphead{
     position:sticky;top:36px;z-index:2;display:flex;align-items:center;justify-content:space-between;
     gap:12px;padding:9px 12px;background:#e8eef7;border-bottom:1px solid #ccd8e8;border-top:1px solid #ccd8e8;
@@ -2577,13 +2582,15 @@
           </div>
 
           <div class="vcc-filter vcc-remark-filter no-print" id="vccRemarkFilter" hidden>
-            <button class="vfl" data-rf="all" aria-pressed="true" type="button">All remarks <span data-rc="all">0</span></button>
+            <button class="vfl" data-rf="all" aria-pressed="true" type="button">All comments <span data-rc="all">0</span></button>
             <button class="vfl" data-rf="vcc" aria-pressed="false" type="button">VCC <span data-rc="vcc">0</span></button>
             <button class="vfl" data-rf="poa" aria-pressed="false" type="button">POA <span data-rc="poa">0</span></button>
             <button class="vfl" data-rf="connectivity" aria-pressed="false" type="button">Connectivity <span data-rc="connectivity">0</span></button>
-            <button class="vfl" data-rf="guest" aria-pressed="false" type="button">Guest / room <span data-rc="guest">0</span></button>
-            <button class="vfl" data-rf="other" aria-pressed="false" type="button">Other <span data-rc="other">0</span></button>
+            <button class="vfl" data-rf="other" aria-pressed="false" type="button">Other comments <span data-rc="other">0</span></button>
             <button class="vfl" data-rf="none" aria-pressed="false" type="button">No remark <span data-rc="none">0</span></button>
+            <select id="vccRemarkGroup" aria-label="Filter by exact main remark">
+              <option value="">All comment groups</option>
+            </select>
           </div>
 
           <div class="vcc-list no-print">
@@ -3294,6 +3301,7 @@
   var vccFilter = "vcc";
   var vccMode = "charging";
   var vccRemarkFilter = "all";
+  var vccRemarkGroupFilter = "";
   var vccQuery = "";
   var checkedRooms = {};
   var stats = { checks:0, approved:0, upgraded:0, rejected:0, repeats:0 };
@@ -5763,28 +5771,55 @@
     vcc: { label:"VCC - virtual card", short:"VCC" },
     poa: { label:"POA - collect at front desk", short:"POA" },
     connectivity: { label:"Connectivity follow-up", short:"Connectivity" },
-    guest: { label:"Guest and room instructions", short:"Guest / room" },
     other: { label:"Other main remarks", short:"Other remark" },
     none: { label:"No main remark", short:"No remark" }
   };
 
+  function vccMainRemarkGroup(r){
+    var raw = String(r.remark || "").replace(/\s+/g, " ").trim();
+    // The payment instruction is the working group, even when a longer note follows it.
+    if(r.pay === "VCC") return { id:"vcc", family:"vcc", label:"VCC - virtual card" };
+    if(r.pay === "POA") return { id:"poa", family:"poa", label:"POA - collect at front desk" };
+    if(/Check\s+Connectivity/i.test(raw)) return { id:"connectivity", family:"connectivity", label:"Connectivity follow-up" };
+    if(!raw) return { id:"none", family:"none", label:"No main remark" };
+    // These recurring hotel instructions are easier to find under their own clear groups.
+    if(/\bSU\s+[\d,.]+\s*€.*\bDU\s+[\d,.]+\s*€.*\bF&B\s+[\d,.]+\s*€/i.test(raw)){
+      return { id:"crew-meals", family:"other", label:"Lufthansa - SU / DU / F&B" };
+    }
+    if(/Imbiss\s+box\s+geben/i.test(raw)) return { id:"crew-snack", family:"other", label:"Lufthansa - Imbiss box geben" };
+    if(/via\s+Depo\s+bezahlt/i.test(raw)) return { id:"depot-paid", family:"other", label:"Deposit already paid" };
+    if(/\bac\s+VA\b/i.test(raw)) return { id:"va", family:"other", label:"VA payment instruction" };
+    if(/\bac\s+MC\b/i.test(raw)) return { id:"mc", family:"other", label:"MC payment instruction" };
+    // For all remaining notes, identical Main remarks become one exact group.
+    var normalized = raw.toLowerCase().replace(/\s+/g, " ").trim();
+    return { id:"remark:" + normalized, family:"other", label:raw.length > 90 ? raw.slice(0,87).trim() + "…" : raw };
+  }
+
   function vccRemarkCategory(r){
-    if(r.pay === "VCC") return "vcc";
-    if(r.pay === "POA") return "poa";
-    var text = String(r.remark || "");
-    if(/Check\s+Connectivity/i.test(text)) return "connectivity";
-    if(/\bVIP\b|Platinum|Zimmer|Room|Upgrade|Park(?:en|ing)|GREEN\s+HSK|Depo\s+bezahlt|BEZAHLT/i.test(text)) return "guest";
-    return text.trim() ? "other" : "none";
+    return vccMainRemarkGroup(r).family;
   }
 
   function vccRemarkCounts(){
-    var counts = {all:0,vcc:0,poa:0,connectivity:0,guest:0,other:0,none:0};
+    var counts = {all:0,vcc:0,poa:0,connectivity:0,other:0,none:0};
     vccRooms.forEach(function(r){
       var category = vccRemarkCategory(r);
       counts[category]++;
       if(category !== "none") counts.all++;
     });
     return counts;
+  }
+
+  function vccRemarkGroups(){
+    var groups = {};
+    vccRooms.forEach(function(r){
+      var group = vccMainRemarkGroup(r);
+      if(!groups[group.id]) groups[group.id] = { id:group.id, family:group.family, label:group.label, count:0 };
+      groups[group.id].count++;
+    });
+    var priority = {vcc:1,poa:2,connectivity:3,other:4,none:5};
+    return Object.keys(groups).map(function(id){ return groups[id]; }).sort(function(a,b){
+      return priority[a.family] - priority[b.family] || a.label.localeCompare(b.label);
+    });
   }
 
   function vccSetMode(mode){
@@ -5798,7 +5833,7 @@
     if(remarkFilters) remarkFilters.hidden = vccMode !== "remarks";
     var help = document.getElementById("vccModeHelp");
     if(help) help.textContent = vccMode === "remarks"
-      ? "Work by type of main remark. Entries are grouped by action, then by room."
+      ? "The same Main remark stays together. Choose a quick filter or one exact comment group."
       : "Charge virtual cards and record the outcome.";
     var hGuest = document.getElementById("vccHeadGuest");
     var hAction = document.getElementById("vccHeadAction");
@@ -5822,10 +5857,23 @@
     });
     var remarkCount = document.getElementById("vccRemarkCount");
     if(remarkCount) remarkCount.textContent = remarkCounts.all;
+    var groupSelect = document.getElementById("vccRemarkGroup");
+    var allGroups = vccRemarkGroups();
+    var selectableGroups = allGroups.filter(function(group){
+      return vccRemarkFilter === "all" ? group.family !== "none" : group.family === vccRemarkFilter;
+    });
+    if(!selectableGroups.some(function(group){ return group.id === vccRemarkGroupFilter; })) vccRemarkGroupFilter = "";
+    if(groupSelect){
+      groupSelect.innerHTML = "<option value=''>All comment groups</option>" + selectableGroups.map(function(group){
+        return "<option value='" + escapeHtml(group.id) + "'>" + escapeHtml(group.label) + " (" + group.count + ")</option>";
+      }).join("");
+      groupSelect.value = vccRemarkGroupFilter;
+    }
     var filtered = vccRooms.filter(function(r){
       if(vccMode === "remarks"){
-        var category = vccRemarkCategory(r);
-        return vccRemarkFilter === "all" ? category !== "none" : category === vccRemarkFilter;
+        var group = vccMainRemarkGroup(r);
+        if(vccRemarkFilter === "all" ? group.family === "none" : group.family !== vccRemarkFilter) return false;
+        return !vccRemarkGroupFilter || group.id === vccRemarkGroupFilter;
       }
       if(vccFilter === "all") return true;
       if(vccFilter === "vcc") return r.pay === "VCC";
@@ -5837,16 +5885,20 @@
       var hay = [r.room,r.guest,r.departureDate,r.ta,r.remark,r.pay,r.reason,r.note].join(" ").toLowerCase();
       return hay.indexOf(vccQuery) !== -1;
     }).sort(function(a,b){
-      var priority = {vcc:1,poa:2,connectivity:3,guest:4,other:5,none:6};
-      var categoryOrder = vccMode === "remarks" ? priority[vccRemarkCategory(a)] - priority[vccRemarkCategory(b)] : 0;
-      return categoryOrder || (a.room || "zzzz").localeCompare(b.room || "zzzz", undefined, {numeric:true}) ||
+      var priority = {vcc:1,poa:2,connectivity:3,other:4,none:5};
+      var groupA = vccMainRemarkGroup(a);
+      var groupB = vccMainRemarkGroup(b);
+      var groupOrder = vccMode === "remarks"
+        ? priority[groupA.family] - priority[groupB.family] || groupA.label.localeCompare(groupB.label)
+        : 0;
+      return groupOrder || (a.room || "zzzz").localeCompare(b.room || "zzzz", undefined, {numeric:true}) ||
         (a.departureDate || "").split(".").reverse().join("").localeCompare((b.departureDate || "").split(".").reverse().join("")) ||
         (a.guest || "").localeCompare(b.guest || "");
     });
     var visibleRemarkCounts = {};
     filtered.forEach(function(r){
-      var category = vccRemarkCategory(r);
-      visibleRemarkCounts[category] = (visibleRemarkCounts[category] || 0) + 1;
+      var group = vccMainRemarkGroup(r);
+      visibleRemarkCounts[group.id] = (visibleRemarkCounts[group.id] || 0) + 1;
     });
 
     document.getElementById("vccEmpty").style.display = vccRooms.length ? "none" : "block";
@@ -5861,22 +5913,22 @@
     if(visible) visible.textContent = filtered.length + " visible";
     host.innerHTML = "";
 
-    var lastCategory = "";
+    var lastGroup = "";
     filtered.forEach(function(r, idx){
       var i = vccRooms.indexOf(r);
-      var category = vccRemarkCategory(r);
-      if(vccMode === "remarks" && category !== lastCategory){
-        var group = document.createElement("div");
-        group.className = "vcc-grouphead";
-        group.innerHTML = "<span>" + escapeHtml(VCC_REMARK_META[category].label) + "</span><span>" + (visibleRemarkCounts[category] || 0) + "</span>";
-        host.appendChild(group);
-        lastCategory = category;
+      var remarkGroup = vccMainRemarkGroup(r);
+      if(vccMode === "remarks" && remarkGroup.id !== lastGroup){
+        var groupHead = document.createElement("div");
+        groupHead.className = "vcc-grouphead";
+        groupHead.innerHTML = "<span>" + escapeHtml(remarkGroup.label) + "</span><span>" + (visibleRemarkCounts[remarkGroup.id] || 0) + "</span>";
+        host.appendChild(groupHead);
+        lastGroup = remarkGroup.id;
       }
       var div = document.createElement("div");
       div.className = "vrow" + (r.status ? " done-" + r.status : "") + (vccMode === "remarks" ? " remark-view" : "");
       var meta = "<span class='vrow-meta'>" +
         (vccMode === "remarks" && r.pay !== "VCC"
-          ? escapeHtml(VCC_REMARK_META[category].short)
+          ? escapeHtml(remarkGroup.label)
           : (r.status ? escapeHtml(({charged:"Charged",failed:"Failed",other:"No VCC"})[r.status] || r.status) +
             (r.time ? " · " + escapeHtml(r.time) : "") : (r.pay === "VCC" ? "To charge" : "Not processed"))) + "</span>";
       var tags = "";
@@ -6006,9 +6058,17 @@
     var b = e.target.closest(".vfl");
     if(!b) return;
     vccRemarkFilter = b.getAttribute("data-rf");
+    vccRemarkGroupFilter = "";
     Array.prototype.forEach.call(this.querySelectorAll(".vfl"), function(x){
       x.setAttribute("aria-pressed", x === b ? "true" : "false");
     });
+    var listBox = document.querySelector("#panel-vcc .vcc-list");
+    if(listBox) listBox.scrollTop = 0;
+    renderVcc();
+  });
+
+  document.getElementById("vccRemarkGroup").addEventListener("change", function(){
+    vccRemarkGroupFilter = this.value;
     var listBox = document.querySelector("#panel-vcc .vcc-list");
     if(listBox) listBox.scrollTop = 0;
     renderVcc();
