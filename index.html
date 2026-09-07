@@ -1964,6 +1964,53 @@
     body.vcc-workspace #panel-vcc .tower-actions button{padding:8px 10px;font-size:11px;}
   }
 
+  /* VCC working list: room first, explicit departure date, stable action area. */
+  body.vcc-workspace #panel-vcc .vcc-list{container-type:inline-size;overflow-anchor:none;}
+  body.vcc-workspace #panel-vcc .vcc-gridhead{display:none;}
+  body.vcc-workspace #panel-vcc .vrow{
+    display:grid;grid-template-columns:76px minmax(0,1fr) 112px;
+    gap:10px 14px;padding:16px 12px;align-items:start;min-width:0;
+  }
+  body.vcc-workspace #panel-vcc .vrow-room{
+    grid-column:1;grid-row:1 / span 2;width:auto;min-width:0;
+    display:flex;flex-direction:column;gap:5px;padding:9px 3px;
+    border:1px solid #ccd8e8;border-radius:8px;background:#edf3fb;text-align:center;
+  }
+  body.vcc-workspace #panel-vcc .vrow-room strong{font:800 22px var(--mono);color:var(--navy);}
+  body.vcc-workspace #panel-vcc .vrow-label{display:block;font:600 12px var(--sans);color:#536681;line-height:1.4;}
+  body.vcc-workspace #panel-vcc .vrow-guest{grid-column:2;min-width:0;white-space:normal;overflow:visible;}
+  body.vcc-workspace #panel-vcc .vrow-name{display:block;font:700 16px/1.4 var(--sans);overflow-wrap:anywhere;}
+  body.vcc-workspace #panel-vcc .vrow-ta{display:block;font:400 13px/1.5 var(--sans);color:#536681;margin-top:3px;overflow-wrap:anywhere;}
+  body.vcc-workspace #panel-vcc .vrow-date{grid-column:3;display:flex;flex-direction:column;gap:5px;font:600 14px/1.5 var(--mono);color:var(--navy);}
+  body.vcc-workspace #panel-vcc .vrow-tags{margin-top:7px;gap:5px;flex-wrap:wrap;overflow:visible;}
+  body.vcc-workspace #panel-vcc .vtag{font-size:12px;line-height:1.4;}
+  body.vcc-workspace #panel-vcc .vrow-outcome{grid-column:2 / -1;display:flex;flex-direction:column;gap:6px;min-width:0;}
+  body.vcc-workspace #panel-vcc .vrow-meta{text-align:left;font:600 12px/1.4 var(--sans);color:#536681;}
+  body.vcc-workspace #panel-vcc .vrow-btns{justify-content:flex-start;flex-wrap:wrap;gap:6px;}
+  body.vcc-workspace #panel-vcc .vbtn{font-size:14px;min-height:38px;padding:7px 10px;}
+  body.vcc-workspace #panel-vcc .vrow-note{grid-column:2 / -1;min-width:0;flex-wrap:wrap;}
+  body.vcc-workspace #panel-vcc .vrow-note input,body.vcc-workspace #panel-vcc .vrow-note select{font-size:14px;min-width:0;max-width:100%;}
+  body.vcc-workspace #panel-vcc .vrow-remark{grid-column:2 / -1;font-size:13px;color:#536681;min-width:0;}
+  body.vcc-workspace #panel-vcc .vrow-remark summary{cursor:pointer;padding:4px 0;}
+  body.vcc-workspace #panel-vcc .vrow-remark p{margin:6px 0 0;line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere;}
+  body.vcc-workspace #panel-vcc .vcc-searchbox input{font-size:14px;}
+  body.vcc-workspace #panel-vcc .vfl{font-size:14px;min-height:36px;}
+  body.vcc-workspace #panel-vcc .vcc-view-meta{font-size:12px;}
+  body.vcc-workspace #panel-vcc .vbtn:focus-visible,body.vcc-workspace #panel-vcc summary:focus-visible{outline:2px solid var(--navy);outline-offset:3px;}
+  @container (min-width:860px){
+    body.vcc-workspace #panel-vcc .vcc-gridhead{display:grid;grid-template-columns:76px minmax(0,1fr) 112px 252px;gap:14px;padding:10px 12px;font-size:12px;}
+    body.vcc-workspace #panel-vcc .vrow{grid-template-columns:76px minmax(0,1fr) 112px 252px;}
+    body.vcc-workspace #panel-vcc .vrow-outcome{grid-column:4;grid-row:1;}
+  }
+  @container (max-width:460px){
+    body.vcc-workspace #panel-vcc .vrow{grid-template-columns:68px minmax(0,1fr);gap:10px;padding:14px 10px;}
+    body.vcc-workspace #panel-vcc .vrow-room{grid-row:1 / span 3;}
+    body.vcc-workspace #panel-vcc .vrow-date{grid-column:2;flex-direction:row;align-items:baseline;flex-wrap:wrap;gap:5px 8px;}
+    body.vcc-workspace #panel-vcc .vrow-outcome{grid-column:2;}
+    body.vcc-workspace #panel-vcc .vrow-btns{gap:5px;}
+    body.vcc-workspace #panel-vcc .vbtn{padding:7px 8px;}
+  }
+
   @media print{
     .ux-quickbar,.ux-top,.ux-toast{display:none !important;}
     .brandbar{position:static !important;box-shadow:none !important;backdrop-filter:none !important;}
@@ -2498,7 +2545,7 @@
 
           <div class="vcc-list no-print">
             <div class="vcc-gridhead" aria-hidden="true">
-              <span>Room</span><span>Guest / agency</span><span>Payment</span><span>Time</span><span>Outcome</span>
+              <span>Room</span><span>Guest / agency / payment</span><span>Departure</span><span>Outcome</span>
             </div>
             <div class="vcc-empty" id="vccEmpty">Upload the guest list with the main remarks, or add rooms manually.<br>Then just press <strong>Charged</strong> or <strong>Failed</strong> on each row.</div>
             <div class="vcc-no-match" id="vccNoMatch">No VCC entry matches this search and filter.</div>
@@ -5453,7 +5500,7 @@
   //   A  Depart.d | Room | Guest | Extras | Time | TA | Main rem.
   //   B  Room | Guest + Main rem. | Time | Extras | TA
   //   C  Room | Guest | TA | Main rem.            (no time, no extras)
-  var VCC_ROW_A = /^(\d{2}\.\d{2}\.\d{4})\s+(?:([A-Z]?\d{3,4})\s+)?(.*?)\s+([\d.,]+)\s+(\d{1,2}:\d{2}:\d{2})\s+(.*)$/;
+  var VCC_ROW_A = /^(\d{2}\.\d{2}\.\d{4})\s+(?:([A-Z]?\d{3,4})\s+)?(.*?)\s+([\d.,]+)\s+(?:(\d{1,2}:\d{2}:\d{2})\s+)?(.*)$/;
   var VCC_ROW_B = /^(?:([A-Z]?\d{3,4})\s+)?(.*?)\s+(\d{1,2}:\d{2}:\d{2})\s+([\d.,]+)\s+(.+)$/;
   var VCC_ROOM_HEAD = /^([A-Z]?\d{3,4})\s+(.*)$/;
   var VCC_REMARK_START = /\s(?=(?:BB|RO|HB|FB|SU|DU|AC|VCC|POA|VIP|WALK-?IN|OAKY|Check\b|\(RO|\(BB|BB\s*\+|RO\s*\*|RO\s*\+|#{2,})\b)/i;
@@ -5559,10 +5606,11 @@
       for(var i=0;i<VCC_SKIP.length;i++){ if(VCC_SKIP[i].test(line)) return; }
       if(!line.trim()) return;
 
-      var room = "", guest = "", extras = 0, ta = "", remark = "", layoutA = false;
+      var room = "", guest = "", extras = 0, ta = "", remark = "", departureDate = "", layoutA = false;
       var m = line.match(VCC_ROW_A);
       if(m){
         layoutA = true;
+        departureDate = m[1];
         room = m[2] || ""; guest = m[3] || "";
         extras = parseFloat(String(m[4]).replace(/\./g,"").replace(",",".")) || 0;
         var t = vccSplitTaRemark((m[6] || "").trim());
@@ -5585,7 +5633,8 @@
       rows.push({
         id: "r" + (++seq),
         room: vccNormRoom(room),
-        guest: vccTidyName(layoutA ? guest : (vccSplitName(guest)[0] || guest)).slice(0,48),
+        departureDate: departureDate,
+        guest: (layoutA ? guest.trim() : vccTidyName(vccSplitName(guest)[0] || guest)).slice(0,120),
         remark: vccRedact(remark).replace(/#{2,}/g," ").replace(/\s+/g," ").trim().slice(0,110),
         pay: (hasVcc || typo) ? "VCC" : (/\bPOA\b/i.test(hay) ? "POA" : ""),
         typo: typo,
@@ -5593,17 +5642,32 @@
         paid: /BEZAHLT/i.test(hay),
         walkin: /WALK-?IN/i.test(hay),
         extras: extras,
-        ta: ta.slice(0,34),
+        ta: ta.slice(0,100),
         status: null, time:"", bizDate:"", shift:"", reason:"", note:""
       });
     });
     return { rooms: rows, unparsed: unparsed };
   }
 
+  function vccRepairSavedRows(list){
+    var changed = false;
+    list.forEach(function(r){
+      if(r.departureDate) return;
+      var m = String(r.guest || "").match(/^(\d{2}\.\d{2}\.\d{4})\s+(?:([A-Z]?\d{3,4})\s+)?(.+)$/);
+      if(!m || (r.room && m[2] && r.room !== vccNormRoom(m[2]))) return;
+      r.departureDate = m[1];
+      if(!r.room && m[2]) r.room = vccNormRoom(m[2]);
+      r.guest = m[3].trim();
+      r.legacyNameRepair = true;
+      changed = true;
+    });
+    return changed;
+  }
+
   function vccKeys(list){
     var seen = {}, keys = [];
     list.forEach(function(r){
-      var base = (r.room || "-") + "|" + (r.guest || "").toLowerCase().trim();
+      var base = (r.room || "-") + "|" + (r.guest || "").toLowerCase().trim() + "|" + (r.departureDate || "");
       seen[base] = (seen[base] || 0) + 1;
       keys.push(base + "#" + seen[base]);
     });
@@ -5611,14 +5675,31 @@
   }
 
   function vccMergeRooms(list){
+    vccRepairSavedRows(vccRooms);
     var prevKeys = vccKeys(vccRooms);
     var prev = {};
     vccRooms.forEach(function(r, i){ prev[prevKeys[i]] = r; });
 
     var newKeys = vccKeys(list);
+    var matchedPrevious = {};
     list.forEach(function(r, i){
       var p = prev[newKeys[i]];
-      if(p && p.status){
+      var previousKey = newKeys[i];
+      if(!p){
+        // Older imports truncated names. Transfer only an unambiguous match
+        // on the same room and departure; never guess between two guests.
+        var candidates = prevKeys.filter(function(k){
+          var old = prev[k];
+          return !matchedPrevious[k] && old.legacyNameRepair && old.room === r.room &&
+            old.departureDate === r.departureDate && old.guest &&
+            r.guest.toLowerCase().indexOf(old.guest.toLowerCase()) === 0 &&
+            list.filter(function(n){ return n.room === old.room && n.departureDate === old.departureDate &&
+              n.guest.toLowerCase().indexOf(old.guest.toLowerCase()) === 0; }).length === 1;
+        });
+        if(candidates.length === 1){ previousKey = candidates[0]; p = prev[previousKey]; }
+      }
+      if(p){
+        matchedPrevious[previousKey] = true;
         r.status = p.status; r.time = p.time; r.bizDate = p.bizDate;
         r.shift = p.shift; r.reason = p.reason; r.note = p.note;
       }
@@ -5628,7 +5709,7 @@
     var taken = {};
     newKeys.forEach(function(k){ taken[k] = true; });
     vccRooms.forEach(function(r, i){
-      if(!taken[prevKeys[i]] && (r.status || r.manual)) list.push(r);
+      if(!taken[prevKeys[i]] && !matchedPrevious[prevKeys[i]] && (r.status || r.manual)) list.push(r);
     });
     return list;
   }
@@ -5636,6 +5717,8 @@
   function renderVcc(){
     var host = document.getElementById("vccItems");
     if(!host) return;
+    // Repair the old date-prefixed guest field in place, retaining all decisions.
+    vccRepairSavedRows(vccRooms);
     var listBox = host.closest(".vcc-list");
     var savedScroll = listBox ? listBox.scrollTop : 0;
     var filtered = vccRooms.filter(function(r){
@@ -5646,8 +5729,12 @@
       return r.status === vccFilter;
     }).filter(function(r){
       if(!vccQuery) return true;
-      var hay = [r.room,r.guest,r.ta,r.remark,r.pay,r.reason,r.note].join(" ").toLowerCase();
+      var hay = [r.room,r.guest,r.departureDate,r.ta,r.remark,r.pay,r.reason,r.note].join(" ").toLowerCase();
       return hay.indexOf(vccQuery) !== -1;
+    }).sort(function(a,b){
+      return (a.room || "zzzz").localeCompare(b.room || "zzzz", undefined, {numeric:true}) ||
+        (a.departureDate || "").split(".").reverse().join("").localeCompare((b.departureDate || "").split(".").reverse().join("")) ||
+        (a.guest || "").localeCompare(b.guest || "");
     });
 
     document.getElementById("vccEmpty").style.display = vccRooms.length ? "none" : "block";
@@ -5661,9 +5748,9 @@
       var i = vccRooms.indexOf(r);
       var div = document.createElement("div");
       div.className = "vrow" + (r.status ? " done-" + r.status : "");
-      var meta = r.status
-        ? "<span class='vrow-meta'>" + escapeHtml(r.time) + "</span>"
-        : "";
+      var meta = "<span class='vrow-meta'>" +
+        (r.status ? escapeHtml(({charged:"Charged",failed:"Failed",other:"No VCC"})[r.status] || r.status) +
+          (r.time ? " · " + escapeHtml(r.time) : "") : (r.pay === "VCC" ? "To charge" : "Not processed")) + "</span>";
       var tags = "";
       if(r.pay === "VCC") tags += "<span class='vtag vcc'>VCC</span>";
       else if(r.pay === "POA") tags += "<span class='vtag poa'>POA</span>";
@@ -5673,16 +5760,21 @@
       if(r.walkin) tags += "<span class='vtag'>walk-in</span>";
       if(r.extras > 0) tags += "<span class='vtag warn'>extras " + r.extras.toFixed(2).replace(".",",") + "</span>";
       div.innerHTML =
-        "<span class='vrow-room'>" + (r.room || "\u2014") + "</span>" +
-        "<span class='vrow-guest'>" + escapeHtml(r.guest || "\u2014") +
-          (r.ta ? " <span class='vrow-ta'>" + escapeHtml(r.ta) + "</span>" : "") + "</span>" +
-        "<span class='vrow-tags'>" + tags + "</span>" +
-        meta +
-        "<span class='vrow-btns'>" +
+        "<span class='vrow-room'><span class='vrow-label'>Room</span><strong>" + escapeHtml(r.room || "—") + "</strong>" +
+          (!r.room ? "<span class='vrow-label'>Unassigned</span>" : "") + "</span>" +
+        "<span class='vrow-guest'><span class='vrow-name'>" + escapeHtml(r.guest || "Guest not provided") + "</span>" +
+          (r.ta ? "<span class='vrow-ta'>" + escapeHtml(r.ta) + "</span>" : "") +
+          "<span class='vrow-tags'>" + tags + "</span></span>" +
+        "<span class='vrow-date'><span class='vrow-label'>Departure</span><span>" + escapeHtml(r.departureDate || "Not provided") + "</span></span>" +
+        "<span class='vrow-outcome'>" + meta + "<span class='vrow-btns'>" +
           "<button class='vbtn" + (r.status==="charged" ? " on-charged":"") + "' data-i='" + i + "' data-s='charged' type='button'>\u2713 Charged</button>" +
           "<button class='vbtn" + (r.status==="failed" ? " on-failed":"") + "' data-i='" + i + "' data-s='failed' type='button'>\u2715 Failed</button>" +
           "<button class='vbtn" + (r.status==="other" ? " on-other":"") + "' data-i='" + i + "' data-s='other' type='button'>No VCC</button>" +
-        "</span>";
+        "</span></span>";
+
+      if(r.remark){
+        div.innerHTML += "<details class='vrow-remark'><summary>Payment remark</summary><p>" + escapeHtml(r.remark) + "</p></details>";
+      }
 
       if(r.status === "failed"){
         var opts = FAIL_REASONS.map(function(x){
@@ -5905,9 +5997,9 @@
   // ---- CSV ----
   document.getElementById("vccCsvBtn").addEventListener("click", function(){
     if(!vccRooms.length){ alert("Nothing to export yet."); return; }
-    var rows = [["Room","Guest","Status","Time","Business date","Shift","Reason","Note"]];
+    var rows = [["Room","Guest","Departure date","Agency","Status","Time","Business date","Shift","Reason","Note"]];
     vccRooms.forEach(function(r){
-      rows.push([r.room, r.guest, r.status || "pending", r.time, r.bizDate, r.shift, r.reason, r.note]);
+      rows.push([r.room, r.guest, r.departureDate || "", r.ta || "", r.status || "pending", r.time, r.bizDate, r.shift, r.reason, r.note]);
     });
     downloadCsv("vcc-log.csv", rows);
   });
