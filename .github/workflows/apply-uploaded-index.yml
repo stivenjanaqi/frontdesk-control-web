@@ -18,14 +18,23 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Apply and verify uploaded index changes
-        run: python tools/apply_uploaded_index_patch.py
+      - name: Apply patch and capture diagnostics
+        id: patch
+        shell: bash
+        run: |
+          set +e
+          python tools/apply_uploaded_index_patch.py > patch-diagnostic.txt 2>&1
+          code=$?
+          echo "exit_code=$code" >> patch-diagnostic.txt
+          if [ "$code" -ne 0 ]; then
+            git checkout -- index.html
+          fi
+          exit 0
 
-      - name: Commit exact uploaded index and remove one-time helpers
+      - name: Commit diagnostics only
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git rm tools/apply_uploaded_index_patch.py .github/workflows/apply-uploaded-index.yml
-          git add index.html
-          git commit -m "Apply latest VCC Main remarks index changes"
+          git add patch-diagnostic.txt
+          git commit -m "Capture index patch diagnostics"
           git push
