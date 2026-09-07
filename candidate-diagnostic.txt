@@ -1,0 +1,25 @@
+patched: replace Main-remark filter controls
+patched: remove obsolete remark category state
+patched: extend travel-agent recognition
+patched: split Main remark on ##
+patched: create split remark during parsing
+patched: store remark head/rest
+patched: add saved-row remark repair helper
+patched: repair legacy saved remark fields
+patched: replace remark categorization with exact PMS groups
+patched: update literal remark view copy
+patched: simplify remark group selector/render filtering
+patched: sort remark groups like PMS
+patched: show extra remark note as row action
+patched: replace remark category listener with reset
+source blob: fc9ad73ab4cd01f9bccb0d616e463f119d381273
+final blob:  de90a434f09d37900d992c88f71b7ae30212f6cc
+target blob: 25a11adf2e81e06dc7807d48ed525ffe6d8779dd
+final bytes: 1773632
+inline JS syntax blocks checked: 4
+Patch result does not match uploaded index.html exactly: de90a434f09d37900d992c88f71b7ae30212f6cc != 25a11adf2e81e06dc7807d48ed525ffe6d8779dd
+pre-CSS blob: de90a434f09d37900d992c88f71b7ae30212f6cc
+final blob:   ffc01d4bffd8dd5c0c57a704c21067195329225e
+target blob:  25a11adf2e81e06dc7807d48ed525ffe6d8779dd
+final bytes:  1774566
+Final blob still differs from uploaded index: ffc01d4bffd8dd5c0c57a704c21067195329225e != 25a11adf2e81e06dc7807d48ed525ffe6d8779dd
