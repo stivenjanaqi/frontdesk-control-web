@@ -1,0 +1,31 @@
+name: Apply uploaded Front Desk index
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/apply-uploaded-index.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  apply-index:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Apply and verify uploaded index changes
+        run: python tools/apply_uploaded_index_patch.py
+
+      - name: Commit exact uploaded index and remove one-time helpers
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm tools/apply_uploaded_index_patch.py .github/workflows/apply-uploaded-index.yml
+          git add index.html
+          git commit -m "Apply latest VCC Main remarks index changes"
+          git push
