@@ -1965,6 +1965,29 @@
   }
 
   /* VCC working list: room first, explicit departure date, stable action area. */
+  body.vcc-workspace #panel-vcc .vcc-modebar{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:7px;}
+  body.vcc-workspace #panel-vcc .vcc-mode{
+    border:1px solid var(--line);border-radius:10px;background:#f5f7fb;color:#536681;
+    padding:10px 12px;font:750 14px var(--sans);cursor:pointer;text-align:left;
+  }
+  body.vcc-workspace #panel-vcc .vcc-mode:hover{border-color:var(--navy-200);}
+  body.vcc-workspace #panel-vcc .vcc-mode[aria-pressed="true"]{background:var(--navy);border-color:var(--navy);color:#fff;}
+  body.vcc-workspace #panel-vcc .vcc-mode span{
+    float:right;min-width:25px;padding:1px 7px;border-radius:999px;background:#fff;color:var(--navy);
+    font:800 12px/1.5 var(--mono);text-align:center;
+  }
+  body.vcc-workspace #panel-vcc .vcc-mode[aria-pressed="false"] span{background:#dfe7f2;}
+  body.vcc-workspace #panel-vcc .vcc-mode-help{margin:0 0 11px;color:#536681;font:400 13px/1.45 var(--sans);}
+  body.vcc-workspace #panel-vcc .vcc-remark-filter .vfl span{margin-left:4px;font-family:var(--mono);}
+  body.vcc-workspace #panel-vcc .vcc-grouphead{
+    position:sticky;top:36px;z-index:2;display:flex;align-items:center;justify-content:space-between;
+    gap:12px;padding:9px 12px;background:#e8eef7;border-bottom:1px solid #ccd8e8;border-top:1px solid #ccd8e8;
+    color:var(--navy);font:800 13px/1.3 var(--sans);letter-spacing:.025em;
+  }
+  body.vcc-workspace #panel-vcc .vcc-grouphead:first-child{border-top:0;}
+  body.vcc-workspace #panel-vcc .vcc-grouphead span:last-child{
+    border-radius:999px;background:#fff;padding:2px 8px;font:800 12px/1.4 var(--mono);
+  }
   body.vcc-workspace #panel-vcc .vcc-list{container-type:inline-size;overflow-anchor:none;}
   body.vcc-workspace #panel-vcc .vcc-gridhead{display:none;}
   body.vcc-workspace #panel-vcc .vrow{
@@ -1993,6 +2016,12 @@
   body.vcc-workspace #panel-vcc .vrow-remark{grid-column:2 / -1;font-size:13px;color:#536681;min-width:0;}
   body.vcc-workspace #panel-vcc .vrow-remark summary{cursor:pointer;padding:4px 0;}
   body.vcc-workspace #panel-vcc .vrow-remark p{margin:6px 0 0;line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere;}
+  body.vcc-workspace #panel-vcc .vrow-remark[open]{
+    border-left:3px solid var(--gold);background:#fff9ed;border-radius:0 7px 7px 0;padding:7px 10px;
+    color:#3c4757;
+  }
+  body.vcc-workspace #panel-vcc .vrow.remark-view .vrow-room{border-color:#9fb3cc;background:#e5eef9;}
+  body.vcc-workspace #panel-vcc .vrow.remark-view .vrow-outcome{align-self:start;}
   body.vcc-workspace #panel-vcc .vcc-searchbox input{font-size:14px;}
   body.vcc-workspace #panel-vcc .vfl{font-size:14px;min-height:36px;}
   body.vcc-workspace #panel-vcc .vcc-view-meta{font-size:12px;}
@@ -2523,7 +2552,11 @@
       <div class="card">
         <div class="brandstrip no-print"></div>
         <div class="card-body">
-          <h2 class="card-title no-print">VCC charging <span class="title-count" id="vccCount">0</span></h2>
+          <div class="vcc-modebar no-print" role="group" aria-label="Choose VCC work view">
+            <button class="vcc-mode" data-mode="charging" aria-pressed="true" type="button">VCC charging <span id="vccCount">0</span></button>
+            <button class="vcc-mode" data-mode="remarks" aria-pressed="false" type="button">Main remarks <span id="vccRemarkCount">0</span></button>
+          </div>
+          <div class="vcc-mode-help no-print" id="vccModeHelp">Charge virtual cards and record the outcome.</div>
 
           <div class="vcc-searchbar no-print">
             <label class="vcc-searchbox" for="vccSearch">
@@ -2543,9 +2576,19 @@
             <button class="vfl" data-f="all" aria-pressed="false" type="button">All</button>
           </div>
 
+          <div class="vcc-filter vcc-remark-filter no-print" id="vccRemarkFilter" hidden>
+            <button class="vfl" data-rf="all" aria-pressed="true" type="button">All remarks <span data-rc="all">0</span></button>
+            <button class="vfl" data-rf="vcc" aria-pressed="false" type="button">VCC <span data-rc="vcc">0</span></button>
+            <button class="vfl" data-rf="poa" aria-pressed="false" type="button">POA <span data-rc="poa">0</span></button>
+            <button class="vfl" data-rf="connectivity" aria-pressed="false" type="button">Connectivity <span data-rc="connectivity">0</span></button>
+            <button class="vfl" data-rf="guest" aria-pressed="false" type="button">Guest / room <span data-rc="guest">0</span></button>
+            <button class="vfl" data-rf="other" aria-pressed="false" type="button">Other <span data-rc="other">0</span></button>
+            <button class="vfl" data-rf="none" aria-pressed="false" type="button">No remark <span data-rc="none">0</span></button>
+          </div>
+
           <div class="vcc-list no-print">
             <div class="vcc-gridhead" aria-hidden="true">
-              <span>Room</span><span>Guest / agency / payment</span><span>Departure</span><span>Outcome</span>
+              <span>Room</span><span id="vccHeadGuest">Guest / agency / payment</span><span>Departure</span><span id="vccHeadAction">Outcome</span>
             </div>
             <div class="vcc-empty" id="vccEmpty">Upload the guest list with the main remarks, or add rooms manually.<br>Then just press <strong>Charged</strong> or <strong>Failed</strong> on each row.</div>
             <div class="vcc-no-match" id="vccNoMatch">No VCC entry matches this search and filter.</div>
@@ -3249,6 +3292,8 @@
   var vccRooms = [];
   var vccSource = "";
   var vccFilter = "vcc";
+  var vccMode = "charging";
+  var vccRemarkFilter = "all";
   var vccQuery = "";
   var checkedRooms = {};
   var stats = { checks:0, approved:0, upgraded:0, rejected:0, repeats:0 };
@@ -5635,7 +5680,7 @@
         room: vccNormRoom(room),
         departureDate: departureDate,
         guest: (layoutA ? guest.trim() : vccTidyName(vccSplitName(guest)[0] || guest)).slice(0,120),
-        remark: vccRedact(remark).replace(/#{2,}/g," ").replace(/\s+/g," ").trim().slice(0,110),
+        remark: vccRedact(remark).replace(/#{2,}/g," ").replace(/\s+/g," ").trim().slice(0,240),
         pay: (hasVcc || typo) ? "VCC" : (/\bPOA\b/i.test(hay) ? "POA" : ""),
         typo: typo,
         vip: /\bVIP\b|\bPREMIUM\b|\bPlatinum\b/i.test(hay),
@@ -5714,6 +5759,56 @@
     return list;
   }
 
+  var VCC_REMARK_META = {
+    vcc: { label:"VCC - virtual card", short:"VCC" },
+    poa: { label:"POA - collect at front desk", short:"POA" },
+    connectivity: { label:"Connectivity follow-up", short:"Connectivity" },
+    guest: { label:"Guest and room instructions", short:"Guest / room" },
+    other: { label:"Other main remarks", short:"Other remark" },
+    none: { label:"No main remark", short:"No remark" }
+  };
+
+  function vccRemarkCategory(r){
+    if(r.pay === "VCC") return "vcc";
+    if(r.pay === "POA") return "poa";
+    var text = String(r.remark || "");
+    if(/Check\s+Connectivity/i.test(text)) return "connectivity";
+    if(/\bVIP\b|Platinum|Zimmer|Room|Upgrade|Park(?:en|ing)|GREEN\s+HSK|Depo\s+bezahlt|BEZAHLT/i.test(text)) return "guest";
+    return text.trim() ? "other" : "none";
+  }
+
+  function vccRemarkCounts(){
+    var counts = {all:0,vcc:0,poa:0,connectivity:0,guest:0,other:0,none:0};
+    vccRooms.forEach(function(r){
+      var category = vccRemarkCategory(r);
+      counts[category]++;
+      if(category !== "none") counts.all++;
+    });
+    return counts;
+  }
+
+  function vccSetMode(mode){
+    vccMode = mode === "remarks" ? "remarks" : "charging";
+    Array.prototype.forEach.call(document.querySelectorAll("#panel-vcc .vcc-mode"), function(b){
+      b.setAttribute("aria-pressed", b.getAttribute("data-mode") === vccMode ? "true" : "false");
+    });
+    var chargeFilters = document.getElementById("vccFilter");
+    var remarkFilters = document.getElementById("vccRemarkFilter");
+    if(chargeFilters) chargeFilters.hidden = vccMode !== "charging";
+    if(remarkFilters) remarkFilters.hidden = vccMode !== "remarks";
+    var help = document.getElementById("vccModeHelp");
+    if(help) help.textContent = vccMode === "remarks"
+      ? "Work by type of main remark. Entries are grouped by action, then by room."
+      : "Charge virtual cards and record the outcome.";
+    var hGuest = document.getElementById("vccHeadGuest");
+    var hAction = document.getElementById("vccHeadAction");
+    if(hGuest) hGuest.textContent = vccMode === "remarks" ? "Guest / agency" : "Guest / agency / payment";
+    if(hAction) hAction.textContent = vccMode === "remarks" ? "Main remark / action" : "Outcome";
+    var listBox = document.querySelector("#panel-vcc .vcc-list");
+    if(listBox) listBox.scrollTop = 0;
+    renderVcc();
+  }
+
   function renderVcc(){
     var host = document.getElementById("vccItems");
     if(!host) return;
@@ -5721,7 +5816,17 @@
     vccRepairSavedRows(vccRooms);
     var listBox = host.closest(".vcc-list");
     var savedScroll = listBox ? listBox.scrollTop : 0;
+    var remarkCounts = vccRemarkCounts();
+    Array.prototype.forEach.call(document.querySelectorAll("[data-rc]"), function(el){
+      el.textContent = remarkCounts[el.getAttribute("data-rc")] || 0;
+    });
+    var remarkCount = document.getElementById("vccRemarkCount");
+    if(remarkCount) remarkCount.textContent = remarkCounts.all;
     var filtered = vccRooms.filter(function(r){
+      if(vccMode === "remarks"){
+        var category = vccRemarkCategory(r);
+        return vccRemarkFilter === "all" ? category !== "none" : category === vccRemarkFilter;
+      }
       if(vccFilter === "all") return true;
       if(vccFilter === "vcc") return r.pay === "VCC";
       if(vccFilter === "poa") return r.pay === "POA";
@@ -5732,25 +5837,48 @@
       var hay = [r.room,r.guest,r.departureDate,r.ta,r.remark,r.pay,r.reason,r.note].join(" ").toLowerCase();
       return hay.indexOf(vccQuery) !== -1;
     }).sort(function(a,b){
-      return (a.room || "zzzz").localeCompare(b.room || "zzzz", undefined, {numeric:true}) ||
+      var priority = {vcc:1,poa:2,connectivity:3,guest:4,other:5,none:6};
+      var categoryOrder = vccMode === "remarks" ? priority[vccRemarkCategory(a)] - priority[vccRemarkCategory(b)] : 0;
+      return categoryOrder || (a.room || "zzzz").localeCompare(b.room || "zzzz", undefined, {numeric:true}) ||
         (a.departureDate || "").split(".").reverse().join("").localeCompare((b.departureDate || "").split(".").reverse().join("")) ||
         (a.guest || "").localeCompare(b.guest || "");
+    });
+    var visibleRemarkCounts = {};
+    filtered.forEach(function(r){
+      var category = vccRemarkCategory(r);
+      visibleRemarkCounts[category] = (visibleRemarkCounts[category] || 0) + 1;
     });
 
     document.getElementById("vccEmpty").style.display = vccRooms.length ? "none" : "block";
     var noMatch = document.getElementById("vccNoMatch");
-    if(noMatch) noMatch.style.display = vccRooms.length && !filtered.length ? "block" : "none";
+    if(noMatch){
+      noMatch.textContent = vccMode === "remarks"
+        ? "No main remark matches this search and filter."
+        : "No VCC entry matches this search and filter.";
+      noMatch.style.display = vccRooms.length && !filtered.length ? "block" : "none";
+    }
     var visible = document.getElementById("vccVisible");
     if(visible) visible.textContent = filtered.length + " visible";
     host.innerHTML = "";
 
+    var lastCategory = "";
     filtered.forEach(function(r, idx){
       var i = vccRooms.indexOf(r);
+      var category = vccRemarkCategory(r);
+      if(vccMode === "remarks" && category !== lastCategory){
+        var group = document.createElement("div");
+        group.className = "vcc-grouphead";
+        group.innerHTML = "<span>" + escapeHtml(VCC_REMARK_META[category].label) + "</span><span>" + (visibleRemarkCounts[category] || 0) + "</span>";
+        host.appendChild(group);
+        lastCategory = category;
+      }
       var div = document.createElement("div");
-      div.className = "vrow" + (r.status ? " done-" + r.status : "");
+      div.className = "vrow" + (r.status ? " done-" + r.status : "") + (vccMode === "remarks" ? " remark-view" : "");
       var meta = "<span class='vrow-meta'>" +
-        (r.status ? escapeHtml(({charged:"Charged",failed:"Failed",other:"No VCC"})[r.status] || r.status) +
-          (r.time ? " · " + escapeHtml(r.time) : "") : (r.pay === "VCC" ? "To charge" : "Not processed")) + "</span>";
+        (vccMode === "remarks" && r.pay !== "VCC"
+          ? escapeHtml(VCC_REMARK_META[category].short)
+          : (r.status ? escapeHtml(({charged:"Charged",failed:"Failed",other:"No VCC"})[r.status] || r.status) +
+            (r.time ? " · " + escapeHtml(r.time) : "") : (r.pay === "VCC" ? "To charge" : "Not processed"))) + "</span>";
       var tags = "";
       if(r.pay === "VCC") tags += "<span class='vtag vcc'>VCC</span>";
       else if(r.pay === "POA") tags += "<span class='vtag poa'>POA</span>";
@@ -5766,14 +5894,14 @@
           (r.ta ? "<span class='vrow-ta'>" + escapeHtml(r.ta) + "</span>" : "") +
           "<span class='vrow-tags'>" + tags + "</span></span>" +
         "<span class='vrow-date'><span class='vrow-label'>Departure</span><span>" + escapeHtml(r.departureDate || "Not provided") + "</span></span>" +
-        "<span class='vrow-outcome'>" + meta + "<span class='vrow-btns'>" +
+        "<span class='vrow-outcome'>" + meta + (vccMode === "charging" || r.pay === "VCC" ? "<span class='vrow-btns'>" +
           "<button class='vbtn" + (r.status==="charged" ? " on-charged":"") + "' data-i='" + i + "' data-s='charged' type='button'>\u2713 Charged</button>" +
           "<button class='vbtn" + (r.status==="failed" ? " on-failed":"") + "' data-i='" + i + "' data-s='failed' type='button'>\u2715 Failed</button>" +
           "<button class='vbtn" + (r.status==="other" ? " on-other":"") + "' data-i='" + i + "' data-s='other' type='button'>No VCC</button>" +
-        "</span></span>";
+        "</span>" : "") + "</span>";
 
       if(r.remark){
-        div.innerHTML += "<details class='vrow-remark'><summary>Payment remark</summary><p>" + escapeHtml(r.remark) + "</p></details>";
+        div.innerHTML += "<details class='vrow-remark'" + (vccMode === "remarks" ? " open" : "") + "><summary>Main remark</summary><p>" + escapeHtml(r.remark) + "</p></details>";
       }
 
       if(r.status === "failed"){
@@ -5805,7 +5933,7 @@
     document.getElementById("vccNumFailed").textContent = failed;
     document.getElementById("vccNumPending").textContent = pending;
     document.getElementById("vccNumOther").textContent = other;
-    document.getElementById("vccCount").textContent = vccRooms.length;
+    document.getElementById("vccCount").textContent = vccOnly.length;
     var badge = document.getElementById("vccBadge");
     if(badge) badge.textContent = pending;
 
@@ -5860,6 +5988,24 @@
     var b = e.target.closest(".vfl");
     if(!b) return;
     vccFilter = b.getAttribute("data-f");
+    Array.prototype.forEach.call(this.querySelectorAll(".vfl"), function(x){
+      x.setAttribute("aria-pressed", x === b ? "true" : "false");
+    });
+    var listBox = document.querySelector("#panel-vcc .vcc-list");
+    if(listBox) listBox.scrollTop = 0;
+    renderVcc();
+  });
+
+  document.querySelector("#panel-vcc .vcc-modebar").addEventListener("click", function(e){
+    var b = e.target.closest(".vcc-mode");
+    if(!b) return;
+    vccSetMode(b.getAttribute("data-mode"));
+  });
+
+  document.getElementById("vccRemarkFilter").addEventListener("click", function(e){
+    var b = e.target.closest(".vfl");
+    if(!b) return;
+    vccRemarkFilter = b.getAttribute("data-rf");
     Array.prototype.forEach.call(this.querySelectorAll(".vfl"), function(x){
       x.setAttribute("aria-pressed", x === b ? "true" : "false");
     });
