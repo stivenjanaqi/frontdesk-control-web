@@ -18,23 +18,25 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Apply patch and capture diagnostics
-        id: patch
+      - name: Build exact uploaded index
         shell: bash
         run: |
           set +e
-          python tools/apply_uploaded_index_patch.py > patch-diagnostic.txt 2>&1
-          code=$?
-          echo "exit_code=$code" >> patch-diagnostic.txt
-          if [ "$code" -ne 0 ]; then
-            git checkout -- index.html
+          python tools/apply_uploaded_index_patch.py > final-patch-check.txt 2>&1
+          first=$?
+          set -e
+          if [ "$first" -eq 0 ]; then
+            echo "First patch unexpectedly already matched target" >> final-patch-check.txt
           fi
-          exit 0
+          python tools/finish_index_css_patch.py >> final-patch-check.txt 2>&1
+          grep -q "EXACT_UPLOAD_MATCH" final-patch-check.txt
 
-      - name: Commit diagnostics only
+      - name: Commit exact index and remove one-time helpers
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add patch-diagnostic.txt
-          git commit -m "Capture index patch diagnostics retry" || true
+          git rm tools/apply_uploaded_index_patch.py tools/finish_index_css_patch.py .github/workflows/apply-uploaded-index.yml patch-diagnostic.txt
+          rm -f final-patch-check.txt
+          git add index.html
+          git commit -m "Apply latest VCC Main remarks index changes"
           git push
