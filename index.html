@@ -7380,3 +7380,66 @@
 
 </body>
 </html>
+
+<style id="vcc-queue-refit">
+/* Focus VCC on the rooms that still need an outcome. */
+body.vcc-workspace #panel-vcc .pci-banner,
+body.vcc-workspace #panel-vcc .vcc-clock{display:none!important;}
+body.vcc-workspace #panel-vcc .card:first-child .card-title{margin:0 0 8px;color:var(--navy);font-size:18px;letter-spacing:0;text-transform:none;}
+body.vcc-workspace #panel-vcc .vcc-src .btn-upload{min-height:44px;font-size:12px;letter-spacing:.03em;}
+body.vcc-workspace #panel-vcc .vcc-progress{margin-top:10px;}
+body.vcc-workspace #panel-vcc .vcc-totals{grid-template-columns:repeat(2,1fr);gap:7px;}
+body.vcc-workspace #panel-vcc .vt{padding:8px 9px;}
+body.vcc-workspace #panel-vcc .vt-n{font-size:19px;}
+body.vcc-workspace #panel-vcc .vcc-modebar{display:none!important;}
+body.vcc-workspace #panel-vcc .vcc-mode-help{display:block;margin:0 0 12px;padding:10px 12px;border-left:3px solid var(--gold);border-radius:0 8px 8px 0;background:#FFF9ED;color:var(--ink);font:700 12px/1.45 var(--sans);}
+body.vcc-workspace #panel-vcc #vccFilter [data-f="vcc"],
+body.vcc-workspace #panel-vcc #vccFilter [data-f="poa"],
+body.vcc-workspace #panel-vcc #vccFilter [data-f="all"]{display:none!important;}
+body.vcc-workspace #panel-vcc .vcc-filter{gap:6px;margin-bottom:10px;}
+body.vcc-workspace #panel-vcc .vfl{min-height:36px;padding:6px 12px;font-size:12px;}
+body.vcc-workspace #panel-vcc .vcc-list{background:#fff;}
+body.vcc-workspace #panel-vcc .vrow{border-left-width:4px;border-left-color:var(--gold);grid-template-columns:66px minmax(180px,1fr) 100px minmax(220px,250px);gap:8px 12px;padding:10px 11px;min-height:58px;}
+body.vcc-workspace #panel-vcc .vrow.done-charged{border-left-color:var(--green);}
+body.vcc-workspace #panel-vcc .vrow.done-failed{border-left-color:var(--red);}
+body.vcc-workspace #panel-vcc .vrow-room{padding:7px 2px;gap:3px;background:#F4F7FB;border-color:#D4DFED;text-align:center;}
+body.vcc-workspace #panel-vcc .vrow-room strong{font-size:18px;}
+body.vcc-workspace #panel-vcc .vrow-label{font-size:9px;}
+body.vcc-workspace #panel-vcc .vrow-name{font-size:14px;line-height:1.32;}
+body.vcc-workspace #panel-vcc .vrow-ta{font-size:11px;line-height:1.35;}
+body.vcc-workspace #panel-vcc .vrow-tags{margin-top:5px;}
+body.vcc-workspace #panel-vcc .vtag{font-size:9.5px;}
+body.vcc-workspace #panel-vcc .vrow-date{font-size:12px;padding-top:3px;}
+body.vcc-workspace #panel-vcc .vrow-meta{font-size:11px;}
+body.vcc-workspace #panel-vcc .vrow-btns{gap:5px;}
+body.vcc-workspace #panel-vcc .vbtn{min-height:34px;padding:6px 9px;font-size:11.5px;}
+body.vcc-workspace #panel-vcc .vrow-remark summary{font-size:11px;color:var(--navy);font-weight:800;}
+body.vcc-workspace #panel-vcc .vrow-remark[open]{background:#FFF9ED;border-left-color:var(--gold);}
+body.vcc-workspace #panel-vcc .tower-actions{border-top:1px solid var(--line-soft);padding-top:10px;}
+@media (max-width:760px){
+ body.vcc-workspace #panel-vcc .vrow{grid-template-columns:64px minmax(0,1fr);padding:12px 10px;}
+ body.vcc-workspace #panel-vcc .vrow-room{grid-row:1 / span 3;}
+ body.vcc-workspace #panel-vcc .vrow-date{grid-column:2;flex-direction:row;gap:6px;}
+ body.vcc-workspace #panel-vcc .vrow-outcome{grid-column:2;}
+}
+</style>
+<script id="vcc-queue-behavior">
+(function(){
+ function one(selector){return document.querySelector(selector);}
+ function label(button,text){if(button&&button.textContent!==text)button.textContent=text;}
+ function tidy(){
+  var panel=one('#panel-vcc');if(!panel)return;
+  var title=panel.querySelector('.card:first-child .card-title');if(title)title.textContent='VCC control';
+  label(one('#vccUploadBtn'),'Upload Main remarks PDF');
+  var help=panel.querySelector('.vcc-mode-help');if(help)help.textContent='Work queue: charge each virtual card, then record Charged or Failed. Completed rooms leave To charge automatically.';
+  label(one('#vccFilter [data-f="pending"]'),'To charge');
+  label(one('#vccFilter [data-f="failed"]'),'Follow-up');
+  label(one('#vccFilter [data-f="charged"]'),'Charged');
+  var empty=one('#vccEmpty');if(empty)empty.innerHTML='<strong>Your VCC queue will appear here.</strong><br>Upload the PMS Main remarks PDF, then process one room at a time.';
+ }
+ function openQueue(){var pending=one('#vccFilter [data-f="pending"]');if(pending&&pending.getAttribute('aria-pressed')!=='true')pending.click();}
+ tidy();
+ var tab=one('#tab-vcc');if(tab)tab.addEventListener('click',function(){setTimeout(function(){tidy();openQueue();},0);});
+ var panel=one('#panel-vcc');if(panel)new MutationObserver(tidy).observe(panel,{childList:true,subtree:true});
+})();
+</script>
