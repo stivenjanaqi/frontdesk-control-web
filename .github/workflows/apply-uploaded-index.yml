@@ -53,6 +53,6 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git rm -f tools/apply_uploaded_index_patch.py tools/finish_index_css_patch.py .github/workflows/apply-uploaded-index.yml
           rm -f patch-diagnostic.txt candidate.patch candidate-diagnostic.txt
-          git add -A index.html patch-diagnostic.txt candidate.patch candidate-diagnostic.txt
+          git add -A
           git commit -m "Apply latest VCC Main remarks updates"
           git push
