@@ -7435,11 +7435,12 @@ body.vcc-workspace #panel-vcc .tower-actions{border-top:1px solid var(--line-sof
   label(one('#vccFilter [data-f="pending"]'),'To charge');
   label(one('#vccFilter [data-f="failed"]'),'Follow-up');
   label(one('#vccFilter [data-f="charged"]'),'Charged');
-  var empty=one('#vccEmpty');if(empty)empty.innerHTML='<strong>Your VCC queue will appear here.</strong><br>Upload the PMS Main remarks PDF, then process one room at a time.';
+ var empty=one('#vccEmpty');
+ var emptyMessage='<strong>Your VCC queue will appear here.</strong><br>Upload the PMS Main remarks PDF, then process one room at a time.';
+ if(empty&&empty.innerHTML!==emptyMessage)empty.innerHTML=emptyMessage;
  }
  function openQueue(){var pending=one('#vccFilter [data-f="pending"]');if(pending&&pending.getAttribute('aria-pressed')!=='true')pending.click();}
  tidy();
  var tab=one('#tab-vcc');if(tab)tab.addEventListener('click',function(){setTimeout(function(){tidy();openQueue();},0);});
- var panel=one('#panel-vcc');if(panel)new MutationObserver(tidy).observe(panel,{childList:true,subtree:true});
 })();
 </script>
