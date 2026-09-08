@@ -10,7 +10,7 @@ permissions:
   contents: write
 
 jobs:
-  inspect-index:
+  apply-index:
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository
@@ -18,20 +18,41 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Build candidate and capture diff
+      - name: Build exact uploaded index
         shell: bash
         run: |
-          set +e
-          python tools/apply_uploaded_index_patch.py > candidate-diagnostic.txt 2>&1
-          python tools/finish_index_css_patch.py >> candidate-diagnostic.txt 2>&1
-          git diff -- index.html > candidate.patch
-          git checkout -- index.html
           set -e
+          python tools/apply_uploaded_index_patch.py || true
+          python tools/finish_index_css_patch.py
 
-      - name: Commit small diagnostic diff
+      - name: Verify JavaScript syntax
+        shell: bash
         run: |
+          set -e
+          python - <<'PY'
+          from pathlib import Path
+          import re, subprocess
+          text = Path('index.html').read_text(encoding='utf-8')
+          blocks = re.findall(r'<script([^>]*)>(.*?)</script\s*>', text, flags=re.I | re.S)
+          checked = 0
+          for i, (attrs, body) in enumerate(blocks):
+              if re.search(r'\bsrc\s*=', attrs, re.I):
+                  continue
+              p = Path(f'/tmp/frontdesk_script_{i}.js')
+              p.write_text(body, encoding='utf-8')
+              subprocess.run(['node', '--check', str(p)], check=True)
+              checked += 1
+          print(f'inline JS syntax blocks checked: {checked}')
+          PY
+
+      - name: Commit verified index and clean temporary files
+        shell: bash
+        run: |
+          set -e
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add candidate.patch candidate-diagnostic.txt
-          git commit -m "Capture candidate index diff"
+          git rm -f tools/apply_uploaded_index_patch.py tools/finish_index_css_patch.py .github/workflows/apply-uploaded-index.yml
+          rm -f patch-diagnostic.txt candidate.patch candidate-diagnostic.txt
+          git add -A index.html patch-diagnostic.txt candidate.patch candidate-diagnostic.txt
+          git commit -m "Apply latest VCC Main remarks updates"
           git push
