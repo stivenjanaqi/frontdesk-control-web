@@ -1135,6 +1135,25 @@
   .vfl[aria-pressed="true"]{background:var(--navy); border-color:var(--navy); color:#fff;}
   .vfl:focus-visible{outline:2px solid var(--navy); outline-offset:2px;}
 
+  .vcc-remark-filter{align-items:center; gap:8px;}
+  .vcc-remark-label{
+    font:800 11px/1 var(--sans); letter-spacing:.06em; text-transform:uppercase; color:var(--ink-muted);
+  }
+  #vccRemarkGroup{
+    flex:1; min-width:200px; max-width:100%; border:1.5px solid var(--line); border-radius:999px;
+    background:#fff; color:var(--navy); padding:7px 12px; font:650 13px var(--sans); cursor:pointer;
+  }
+  #vccRemarkGroup:focus-visible{outline:2px solid var(--navy); outline-offset:2px;}
+  .vcc-grouphead{
+    display:flex; align-items:center; justify-content:space-between; gap:12px;
+    padding:9px 12px; background:#e8eef7; border-top:1px solid #ccd8e8; border-bottom:1px solid #ccd8e8;
+    color:var(--navy); font:800 12.5px/1.35 var(--sans);
+  }
+  .vcc-grouphead:first-child{border-top:0;}
+  .vcc-grouphead span:last-child{
+    flex:none; border-radius:999px; background:#fff; padding:2px 8px; font:800 12px/1.4 var(--mono);
+  }
+
   .vcc-list{border:1px solid var(--line); border-radius:var(--radius-md); overflow:hidden; margin-bottom:14px;}
   .vcc-empty{padding:26px 12px; text-align:center; color:var(--ink-faint); font-size:12.5px; line-height:1.6;}
   .vrow{
@@ -2582,15 +2601,11 @@
           </div>
 
           <div class="vcc-filter vcc-remark-filter no-print" id="vccRemarkFilter" hidden>
-            <button class="vfl" data-rf="all" aria-pressed="true" type="button">All comments <span data-rc="all">0</span></button>
-            <button class="vfl" data-rf="vcc" aria-pressed="false" type="button">VCC <span data-rc="vcc">0</span></button>
-            <button class="vfl" data-rf="poa" aria-pressed="false" type="button">POA <span data-rc="poa">0</span></button>
-            <button class="vfl" data-rf="connectivity" aria-pressed="false" type="button">Connectivity <span data-rc="connectivity">0</span></button>
-            <button class="vfl" data-rf="other" aria-pressed="false" type="button">Other comments <span data-rc="other">0</span></button>
-            <button class="vfl" data-rf="none" aria-pressed="false" type="button">No remark <span data-rc="none">0</span></button>
-            <select id="vccRemarkGroup" aria-label="Filter by exact main remark">
-              <option value="">All comment groups</option>
+            <label class="vcc-remark-label" for="vccRemarkGroup">Main remark</label>
+            <select id="vccRemarkGroup" aria-label="Filter by main remark">
+              <option value="">All main remarks</option>
             </select>
+            <button class="vfl" id="vccRemarkReset" type="button">Show all</button>
           </div>
 
           <div class="vcc-list no-print">
@@ -3300,7 +3315,6 @@
   var vccSource = "";
   var vccFilter = "vcc";
   var vccMode = "charging";
-  var vccRemarkFilter = "all";
   var vccRemarkGroupFilter = "";
   var vccQuery = "";
   var checkedRooms = {};
@@ -5570,7 +5584,10 @@
     "BING HOTEL ADS - APAC","EXPEDIA RHG AFFILIATE","NAVAN NETHERLANDS BV","EXPEDIA GROUP INC",
     "MOBILEMEDIA ADS","APPSMEDIA - IOS","CTRIP INTERNATIONAL","DIRECT TRAVEL","EGENCIA FRANCE",
     "DESKTOPMEDIA","BOOKING.COM","GUEST, DIRECT","NAVAN, INC.","NAVAN INC","EHOTEL AG",
-    "GBT III BV","TRADEDOUBLER","STUBA"];
+    "GBT III BV","TRADEDOUBLER","STUBA",
+    // agencies seen in the daily departures list whose name was ending up inside the remark
+    "VENDITO - HOTEL SALES SERVICE","TRIPACTIONS - GERMANY","SINFINITY CTC DOO (DE)",
+    "SINFINITY CTC DOO","GEBR. KNAUF KG","GUEST, LOYALTY","HELMSBRISCOE","TRIPACTIONS"];
 
   // Some bookings carry a real card in the remark. Scrub anything card-shaped
   // before it is ever stored or printed — this tool keeps no card data.
@@ -5580,6 +5597,20 @@
       .replace(/\(\s*[X*]{4,}\d{2,6}\s*\)/g, "([card redacted])")
       .replace(/\b\d[\d ]{10,}\d\b/g, "[card redacted]")
       .replace(/\bexp\.?\s*\d{2}\s*\/\s*\d{2,4}/gi, "");
+  }
+
+  // The PMS "Main rem." column holds one instruction, optionally followed by
+  // extra notes, all separated by ## in the export. The PMS sorts the list on
+  // that leading instruction, so the tool groups on exactly the same thing.
+  function vccSplitRemark(raw){
+    var parts = vccRedact(String(raw || "")).split(/#{2,}/).map(function(p){
+      return p.replace(/#+/g, " ").replace(/\s+/g, " ").trim();
+    }).filter(function(p){ return p.length > 0; });
+    return {
+      head: (parts[0] || "").slice(0,120),
+      rest: parts.slice(1).join(" \u00B7 ").slice(0,200),
+      full: parts.join(" ").slice(0,240)
+    };
   }
 
   function vccNormRoom(raw){
@@ -5683,12 +5714,15 @@
       var hay = guest + " " + remark;
       var hasVcc = /\bVCC\b/i.test(hay);
       var typo = !hasVcc && /VVC/i.test(hay);   // "acVVC" appears in real exports
+      var split = vccSplitRemark(remark);
       rows.push({
         id: "r" + (++seq),
         room: vccNormRoom(room),
         departureDate: departureDate,
         guest: (layoutA ? guest.trim() : vccTidyName(vccSplitName(guest)[0] || guest)).slice(0,120),
-        remark: vccRedact(remark).replace(/#{2,}/g," ").replace(/\s+/g," ").trim().slice(0,240),
+        remark: split.full,
+        remarkHead: split.head,
+        remarkRest: split.rest,
         pay: (hasVcc || typo) ? "VCC" : (/\bPOA\b/i.test(hay) ? "POA" : ""),
         typo: typo,
         vip: /\bVIP\b|\bPREMIUM\b|\bPlatinum\b/i.test(hay),
@@ -5702,8 +5736,28 @@
     return { rooms: rows, unparsed: unparsed };
   }
 
+  // Rows saved before the list was grouped by Main remark have no head stored.
+  // Rebuild a best-effort one so an old session still groups sensibly; the next
+  // upload replaces it with the exact head from the export.
+  function vccHeadFromStored(text){
+    var t = String(text || "").replace(/\s+/g," ").trim();
+    if(!t) return "";
+    var m = t.match(/^.{0,40}?\b(?:VCC|POA|MC|VA)\b/i);
+    if(m) return m[0].trim();
+    m = t.match(/^Check Connectivity comments/i);
+    if(m) return m[0];
+    return t.length > 55 ? t.slice(0,55).trim() : t;
+  }
+
   function vccRepairSavedRows(list){
     var changed = false;
+    list.forEach(function(r){
+      if(typeof r.remarkHead !== "string"){
+        r.remarkHead = vccHeadFromStored(r.remark);
+        r.remarkRest = String(r.remark || "").replace(/\s+/g," ").trim().slice(r.remarkHead.length).trim();
+        changed = true;
+      }
+    });
     list.forEach(function(r){
       if(r.departureDate) return;
       var m = String(r.guest || "").match(/^(\d{2}\.\d{2}\.\d{4})\s+(?:([A-Z]?\d{3,4})\s+)?(.+)$/);
@@ -5767,59 +5821,46 @@
     return list;
   }
 
-  var VCC_REMARK_META = {
-    vcc: { label:"VCC - virtual card", short:"VCC" },
-    poa: { label:"POA - collect at front desk", short:"POA" },
-    connectivity: { label:"Connectivity follow-up", short:"Connectivity" },
-    other: { label:"Other main remarks", short:"Other remark" },
-    none: { label:"No main remark", short:"No remark" }
-  };
-
+  // One group per Main remark, exactly the split the PMS list shows: the
+  // instruction before the first ## is the group, anything after it stays on
+  // the row as an extra note. No re-interpreting, no merged categories.
   function vccMainRemarkGroup(r){
-    var raw = String(r.remark || "").replace(/\s+/g, " ").trim();
-    // The payment instruction is the working group, even when a longer note follows it.
-    if(r.pay === "VCC") return { id:"vcc", family:"vcc", label:"VCC - virtual card" };
-    if(r.pay === "POA") return { id:"poa", family:"poa", label:"POA - collect at front desk" };
-    if(/Check\s+Connectivity/i.test(raw)) return { id:"connectivity", family:"connectivity", label:"Connectivity follow-up" };
-    if(!raw) return { id:"none", family:"none", label:"No main remark" };
-    // These recurring hotel instructions are easier to find under their own clear groups.
-    if(/\bSU\s+[\d,.]+\s*€.*\bDU\s+[\d,.]+\s*€.*\bF&B\s+[\d,.]+\s*€/i.test(raw)){
-      return { id:"crew-meals", family:"other", label:"Lufthansa - SU / DU / F&B" };
-    }
-    if(/Imbiss\s+box\s+geben/i.test(raw)) return { id:"crew-snack", family:"other", label:"Lufthansa - Imbiss box geben" };
-    if(/via\s+Depo\s+bezahlt/i.test(raw)) return { id:"depot-paid", family:"other", label:"Deposit already paid" };
-    if(/\bac\s+VA\b/i.test(raw)) return { id:"va", family:"other", label:"VA payment instruction" };
-    if(/\bac\s+MC\b/i.test(raw)) return { id:"mc", family:"other", label:"MC payment instruction" };
-    // For all remaining notes, identical Main remarks become one exact group.
-    var normalized = raw.toLowerCase().replace(/\s+/g, " ").trim();
-    return { id:"remark:" + normalized, family:"other", label:raw.length > 90 ? raw.slice(0,87).trim() + "…" : raw };
+    var head = String(r.remarkHead || "").replace(/\s+/g," ").trim();
+    if(!head) return { id:"~none", key:"", label:"No main remark", empty:true };
+    var key = head.toLowerCase();
+    return {
+      id: "rm:" + key,
+      key: key,
+      label: head.length > 90 ? head.slice(0,87).trim() + "\u2026" : head,
+      empty: false
+    };
   }
 
-  function vccRemarkCategory(r){
-    return vccMainRemarkGroup(r).family;
-  }
-
-  function vccRemarkCounts(){
-    var counts = {all:0,vcc:0,poa:0,connectivity:0,other:0,none:0};
-    vccRooms.forEach(function(r){
-      var category = vccRemarkCategory(r);
-      counts[category]++;
-      if(category !== "none") counts.all++;
-    });
-    return counts;
+  // PMS sorts blanks first, then the remark text A→Z. Same order here.
+  function vccGroupSort(a, b){
+    if(a.key === b.key) return 0;
+    if(!a.key) return -1;
+    if(!b.key) return 1;
+    return a.key.localeCompare(b.key, undefined, {numeric:true});
   }
 
   function vccRemarkGroups(){
-    var groups = {};
+    var groups = {}, order = [];
     vccRooms.forEach(function(r){
       var group = vccMainRemarkGroup(r);
-      if(!groups[group.id]) groups[group.id] = { id:group.id, family:group.family, label:group.label, count:0 };
+      if(!groups[group.id]){
+        groups[group.id] = { id:group.id, key:group.key, label:group.label, empty:group.empty, count:0 };
+        order.push(group.id);
+      }
       groups[group.id].count++;
     });
-    var priority = {vcc:1,poa:2,connectivity:3,other:4,none:5};
-    return Object.keys(groups).map(function(id){ return groups[id]; }).sort(function(a,b){
-      return priority[a.family] - priority[b.family] || a.label.localeCompare(b.label);
-    });
+    return order.map(function(id){ return groups[id]; }).sort(vccGroupSort);
+  }
+
+  function vccWithRemarkCount(){
+    var n = 0;
+    vccRooms.forEach(function(r){ if(String(r.remarkHead || "").trim()) n++; });
+    return n;
   }
 
   function vccSetMode(mode){
@@ -5833,12 +5874,12 @@
     if(remarkFilters) remarkFilters.hidden = vccMode !== "remarks";
     var help = document.getElementById("vccModeHelp");
     if(help) help.textContent = vccMode === "remarks"
-      ? "The same Main remark stays together. Choose a quick filter or one exact comment group."
+      ? "The list is split by Main remark, in the same order as the PMS. Pick one remark to see only those rooms."
       : "Charge virtual cards and record the outcome.";
     var hGuest = document.getElementById("vccHeadGuest");
     var hAction = document.getElementById("vccHeadAction");
     if(hGuest) hGuest.textContent = vccMode === "remarks" ? "Guest / agency" : "Guest / agency / payment";
-    if(hAction) hAction.textContent = vccMode === "remarks" ? "Main remark / action" : "Outcome";
+    if(hAction) hAction.textContent = vccMode === "remarks" ? "Extra note / action" : "Outcome";
     var listBox = document.querySelector("#panel-vcc .vcc-list");
     if(listBox) listBox.scrollTop = 0;
     renderVcc();
@@ -5851,29 +5892,21 @@
     vccRepairSavedRows(vccRooms);
     var listBox = host.closest(".vcc-list");
     var savedScroll = listBox ? listBox.scrollTop : 0;
-    var remarkCounts = vccRemarkCounts();
-    Array.prototype.forEach.call(document.querySelectorAll("[data-rc]"), function(el){
-      el.textContent = remarkCounts[el.getAttribute("data-rc")] || 0;
-    });
     var remarkCount = document.getElementById("vccRemarkCount");
-    if(remarkCount) remarkCount.textContent = remarkCounts.all;
+    if(remarkCount) remarkCount.textContent = vccWithRemarkCount();
     var groupSelect = document.getElementById("vccRemarkGroup");
     var allGroups = vccRemarkGroups();
-    var selectableGroups = allGroups.filter(function(group){
-      return vccRemarkFilter === "all" ? group.family !== "none" : group.family === vccRemarkFilter;
-    });
-    if(!selectableGroups.some(function(group){ return group.id === vccRemarkGroupFilter; })) vccRemarkGroupFilter = "";
+    if(!allGroups.some(function(group){ return group.id === vccRemarkGroupFilter; })) vccRemarkGroupFilter = "";
     if(groupSelect){
-      groupSelect.innerHTML = "<option value=''>All comment groups</option>" + selectableGroups.map(function(group){
-        return "<option value='" + escapeHtml(group.id) + "'>" + escapeHtml(group.label) + " (" + group.count + ")</option>";
-      }).join("");
+      groupSelect.innerHTML = "<option value=''>All main remarks (" + vccRooms.length + ")</option>" +
+        allGroups.map(function(group){
+          return "<option value='" + escapeHtml(group.id) + "'>" + escapeHtml(group.label) + " (" + group.count + ")</option>";
+        }).join("");
       groupSelect.value = vccRemarkGroupFilter;
     }
     var filtered = vccRooms.filter(function(r){
       if(vccMode === "remarks"){
-        var group = vccMainRemarkGroup(r);
-        if(vccRemarkFilter === "all" ? group.family === "none" : group.family !== vccRemarkFilter) return false;
-        return !vccRemarkGroupFilter || group.id === vccRemarkGroupFilter;
+        return !vccRemarkGroupFilter || vccMainRemarkGroup(r).id === vccRemarkGroupFilter;
       }
       if(vccFilter === "all") return true;
       if(vccFilter === "vcc") return r.pay === "VCC";
@@ -5885,11 +5918,8 @@
       var hay = [r.room,r.guest,r.departureDate,r.ta,r.remark,r.pay,r.reason,r.note].join(" ").toLowerCase();
       return hay.indexOf(vccQuery) !== -1;
     }).sort(function(a,b){
-      var priority = {vcc:1,poa:2,connectivity:3,other:4,none:5};
-      var groupA = vccMainRemarkGroup(a);
-      var groupB = vccMainRemarkGroup(b);
       var groupOrder = vccMode === "remarks"
-        ? priority[groupA.family] - priority[groupB.family] || groupA.label.localeCompare(groupB.label)
+        ? vccGroupSort(vccMainRemarkGroup(a), vccMainRemarkGroup(b))
         : 0;
       return groupOrder || (a.room || "zzzz").localeCompare(b.room || "zzzz", undefined, {numeric:true}) ||
         (a.departureDate || "").split(".").reverse().join("").localeCompare((b.departureDate || "").split(".").reverse().join("")) ||
@@ -5926,9 +5956,10 @@
       }
       var div = document.createElement("div");
       div.className = "vrow" + (r.status ? " done-" + r.status : "") + (vccMode === "remarks" ? " remark-view" : "");
+      var extraNote = String(r.remarkRest || "").replace(/\s+/g," ").trim();
       var meta = "<span class='vrow-meta'>" +
         (vccMode === "remarks" && r.pay !== "VCC"
-          ? escapeHtml(remarkGroup.label)
+          ? (extraNote ? escapeHtml(extraNote.length > 90 ? extraNote.slice(0,87) + "\u2026" : extraNote) : "\u2014")
           : (r.status ? escapeHtml(({charged:"Charged",failed:"Failed",other:"No VCC"})[r.status] || r.status) +
             (r.time ? " · " + escapeHtml(r.time) : "") : (r.pay === "VCC" ? "To charge" : "Not processed"))) + "</span>";
       var tags = "";
@@ -6054,14 +6085,8 @@
     vccSetMode(b.getAttribute("data-mode"));
   });
 
-  document.getElementById("vccRemarkFilter").addEventListener("click", function(e){
-    var b = e.target.closest(".vfl");
-    if(!b) return;
-    vccRemarkFilter = b.getAttribute("data-rf");
+  document.getElementById("vccRemarkReset").addEventListener("click", function(){
     vccRemarkGroupFilter = "";
-    Array.prototype.forEach.call(this.querySelectorAll(".vfl"), function(x){
-      x.setAttribute("aria-pressed", x === b ? "true" : "false");
-    });
     var listBox = document.querySelector("#panel-vcc .vcc-list");
     if(listBox) listBox.scrollTop = 0;
     renderVcc();
@@ -6240,6 +6265,14 @@
       ["Settled without VCC", { v:other.length, mono:true }],
       ["VCC rows not actioned", { v:pending.length, mono:true }]
     ]));
+
+    var remarkGroups = vccRemarkGroups();
+    if(remarkGroups.length){
+      out += bfSection("Main remarks on the list", naTable(["Main remark","Rooms"],
+        remarkGroups.map(function(group){
+          return [escapeHtml(group.label), { v:group.count, mono:true }];
+        })));
+    }
 
     if(charged.length){
       out += bfSection("VCC charged", naTable(["Room","Guest","Time","Business date"],
