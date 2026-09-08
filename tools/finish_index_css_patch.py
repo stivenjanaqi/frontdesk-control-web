@@ -3,7 +3,7 @@ import hashlib
 
 PATH = Path("index.html")
 EXPECTED_BEFORE = "de90a434f09d37900d992c88f71b7ae30212f6cc"
-EXPECTED_TARGET = "25a11adf2e81e06dc7807d48ed525ffe6d8779dd"
+EXPECTED_TARGET = "25a11ad52cc868fd34133791023045f36ef2715a"
 
 
 def blob_sha(data: bytes) -> str:
